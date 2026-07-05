@@ -1,7 +1,8 @@
 {
 	"name": "SimpleMermaid",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"author": "jmnote",
+	"url": "https://www.mediawiki.org/wiki/Extension:SimpleMermaid",
 	"description": "Render Mermaid diagrams from <mermaid> tags using a CDN-hosted Mermaid bundle.",
 	"license-name": "Apache-2.0",
 	"type": "parserhook",

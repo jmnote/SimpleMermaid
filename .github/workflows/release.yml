@@ -1,0 +1,72 @@
+name: release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  tag-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Create tag and release if missing
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const extensionPath = path.join(process.cwd(), 'extension.json');
+            const extension = JSON.parse(fs.readFileSync(extensionPath, 'utf8'));
+            const version = extension.version;
+
+            if (!version) {
+              core.setFailed('extension.json version is missing.');
+              return;
+            }
+
+            const tag = `v${version}`;
+
+            try {
+              await github.rest.git.getRef({
+                owner,
+                repo,
+                ref: `tags/${tag}`
+              });
+              core.info(`Tag ${tag} already exists. Skipping release creation.`);
+              return;
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+            }
+
+            await github.rest.git.createRef({
+              owner,
+              repo,
+              ref: `refs/tags/${tag}`,
+              sha: context.sha
+            });
+
+            await github.rest.repos.createRelease({
+              owner,
+              repo,
+              tag_name: tag,
+              target_commitish: context.sha,
+              name: tag,
+              generate_release_notes: true,
+              draft: false,
+              prerelease: false
+            });
